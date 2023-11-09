@@ -1,23 +1,34 @@
 import { Component, OnInit } from '@angular/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
-import { GetTextByPdfService } from '../services/get-text-by-pdf.service';
+import { PyhtonPdfService } from '../services/pyhton-pdf.service';
+import { LoadingController, ToastController } from '@ionic/angular';
 
+interface IInputFile {
+  file: File;
+  fileAsBase64: string | ArrayBuffer;
+  id: number;
+}
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  providers: [GetTextByPdfService]
+  providers: [PyhtonPdfService]
 })
 export class Tab1Page implements OnInit {
-  text = 'Texto para teste teste teste teste teste teste'
+  inputFile: IInputFile;
+  pdfModel: any
+
+  text = 'Envie um pdf'
   speed: number = 1
 
-
-  pdfPath = "/src/assets/Cap12 - The Framework_RevFinal.pdf";
+  initializeRead: boolean = false
 
   constructor(
-    private getTextByPdfService: GetTextByPdfService
+    private pyhtonPdfService: PyhtonPdfService,
+
+    private loadingCtrl: LoadingController,
+    private toastController: ToastController
   ) {
     SpeechRecognition.requestPermission();
     TextToSpeech.openInstall()
@@ -27,12 +38,51 @@ export class Tab1Page implements OnInit {
     this.loadText()
   }
 
-  loadText() {
-    this.getTextByPdfService.getTextByPdf()
+  async handleFile(event: any): Promise<void> {
+    if (event.target.files[0].type === 'application/pdf') {
+      this.inputFile = {} as IInputFile;
+
+      this.inputFile = {
+        file: event.target.files[0],
+      } as IInputFile;
+
+      const loading = await this.loadingCtrl.create({
+        message: 'Preparando pdf...',
+      });
+      loading.present();
+      const formData = new FormData()
+      formData.append('file', this.inputFile.file)
+
+      this.pyhtonPdfService.sendPdf(formData).subscribe(() => { }, () => {
+        loading.dismiss();
+      })
+
+      console.log(this.inputFile)
+
+    } else {
+      const toast = await this.toastController.create({
+        message: 'Por favor selecione um arquivo no formato PDF.',
+        duration: 1500,
+        position: 'bottom',
+        color: 'danger'
+      });
+
+      await toast.present();
+    }
+  }
+
+  onIonChange(ev: any) {
+    this.speed = ev.detail.value
   }
 
   pinFormatter(value: number) {
     return `${value}%`;
+  }
+
+  loadText() {
+    this.pyhtonPdfService.getTextByPdf().subscribe((text) => {
+      this.text = text
+    })
   }
 
   async textSpeak() {
@@ -45,24 +95,4 @@ export class Tab1Page implements OnInit {
       category: 'ambient',
     })
   }
-
-  onIonChange(ev: any) {
-    console.log(ev.detail.value)
-    this.speed = ev.detail.value
-  }
-
-  /*
-  const getSupportedLanguages = async () => {
-  const languages = await TextToSpeech.getSupportedLanguages();
-};
-
-const getSupportedVoices = async () => {
-  const voices = await TextToSpeech.getSupportedVoices();
-};
-
-const isLanguageSupported = async (lang: string) => {
-  const isSupported = await TextToSpeech.isLanguageSupported({ lang });
-};
-  */
-
 }
