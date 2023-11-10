@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
-import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { PyhtonPdfService } from '../services/pyhton-pdf.service';
 import { LoadingController, ToastController } from '@ionic/angular';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 interface IInputFile {
   file: File;
@@ -20,7 +20,9 @@ export class Tab1Page implements OnInit {
   pdfModel: any
 
   text = 'Envie um pdf'
-  speed: number = 1
+  textToShow: string = ''
+  speed: number = 0.6
+  textOnArray: string[] = []
 
   initializeRead: boolean = false
 
@@ -28,9 +30,9 @@ export class Tab1Page implements OnInit {
     private pyhtonPdfService: PyhtonPdfService,
 
     private loadingCtrl: LoadingController,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private sanitizer: DomSanitizer
   ) {
-    SpeechRecognition.requestPermission();
     TextToSpeech.openInstall()
   }
 
@@ -56,9 +58,6 @@ export class Tab1Page implements OnInit {
       this.pyhtonPdfService.sendPdf(formData).subscribe(() => { }, () => {
         loading.dismiss();
       })
-
-      console.log(this.inputFile)
-
     } else {
       const toast = await this.toastController.create({
         message: 'Por favor selecione um arquivo no formato PDF.',
@@ -72,25 +71,61 @@ export class Tab1Page implements OnInit {
   }
 
   onIonChange(ev: any) {
-    this.speed = ev.detail.value
+    this.speed = ev.detail.value / 2
   }
 
   pinFormatter(value: number) {
     return `${value}%`;
   }
 
+  confirm() {
+    this.initializeRead = true
+    setTimeout(() => {
+      this.loadText()
+    }, 2000)
+  }
+
   loadText() {
-    this.pyhtonPdfService.getTextByPdf().subscribe((text) => {
+    this.pyhtonPdfService.getTextByPdf().subscribe(({ result: text }) => {
       this.text = text
+      this.textToShow = text
     })
   }
 
-  async textSpeak() {
+  sanitizeHtml(html: string): SafeHtml {
+    this.textOnArray = this.text.split(' ')
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  readArray(index = 0) {
+    if (index >= this.textOnArray.length) {
+      return;
+    }
+
+    const arrayStr = [this.textOnArray[index], this.textOnArray[index + 1], this.textOnArray[index + 2]];
+    const strToRead = arrayStr.join(' ');
+
+    const readNow = strToRead
+
+    this.textToShow = this.text.replace(readNow, `<span style=\'background-color:var(--ion-color-primary);color:white;padding:3px;border-radius:5px\;font-weight:600'>${readNow}</span>`)
+
+    this.textSpeak(strToRead)
+      .then(() => {
+        this.readArray(index + 3);
+      })
+  }
+
+  stop() {
+    TextToSpeech.stop()
+  }
+
+  async textSpeak(text: string) {
+    TextToSpeech.getSupportedVoices().then((test) => console.log(test.voices.filter((vc) => vc.lang === 'pt')))
     await TextToSpeech.speak({
-      text: 'This is a sample text.',
-      lang: 'en-US',
+      text: text,
       rate: this.speed,
       pitch: 1.0,
+      lang: 'pt',
       volume: 1.0,
       category: 'ambient',
     })

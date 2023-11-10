@@ -35,22 +35,39 @@
             <input id="dropzone-file" type="file" class="hidden" />
           </label>
         </div>
-        <ion-button color="primary" expand="full" (click)="initializeRead = true">
+        <ion-button color="primary" expand="full" (click)="confirm()">
           <ion-label>Confirmar</ion-label>
         </ion-button>
       </div>
     </div>
 
     <div *ngIf="initializeRead">
-      <p [innerHTML]="text"></p>
-      <ion-range aria-label="Range with pin" [pin]="true" [pinFormatter]="pinFormatter"
-        (ionChange)="onIonChange($event)" [snaps]="true" [min]="1" [max]="10">
-        <ion-icon name="speedometer" color="primary" slot="end"></ion-icon>
-      </ion-range>
-      <ion-button color="primary" expand="full" (click)="textSpeak()">
-        <ion-label>Ler texto</ion-label>
-        <ion-icon name="volume-high" class="mx-2"></ion-icon>
-      </ion-button>
+      <div class="border-2 border-gray-500 rounded-lg p-5 my-4">
+        <p [innerHTML]="sanitizeHtml(textToShow)"></p>
+      </div>
+
+      <div class="w-11/12 py-2 fixed inset-x-0 bottom-2 mx-auto shadow-xl shadow-black bg-slate-800 rounded-xl">
+        <div class="w-10/12 mx-auto flex justify-center items-center flex-col">
+          <div class="w-full -mt-8">
+            <ion-range aria-label="Range with pin" [pin]="true" [pinFormatter]="pinFormatter"
+              (ionChange)="onIonChange($event)" [min]="1" [max]="10">
+              <ion-icon name="speedometer" color="primary" slot="end"></ion-icon>
+            </ion-range>
+          </div>
+          <div class="w-full flex">
+            <ion-button color="primary" class="w-full" (click)="readArray()">
+              <ion-label>Ler texto</ion-label>
+              <ion-icon name="volume-high" class="mx-2"></ion-icon>
+            </ion-button>
+            <!--             <ion-button color="primary" class="w-fit" (click)="readArray()">
+              <ion-icon name="stop"></ion-icon>
+            </ion-button> -->
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
   </div>
 </ion-content>
