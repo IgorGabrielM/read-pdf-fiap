@@ -3,6 +3,7 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { PyhtonPdfService } from '../services/pyhton-pdf.service';
 import { LoadingController, ToastController } from '@ionic/angular';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 
 interface IInputFile {
   file: File;
@@ -19,25 +20,41 @@ export class Tab1Page implements OnInit {
   inputFile: IInputFile;
   pdfModel: any
 
+  initializeRead: boolean = false
+
+  urlInput: string = ''
   text = 'Envie um pdf'
   textToShow: string = ''
   speed: number = 0.6
   textOnArray: string[] = []
+  readIndex: number = 0
+  readProgress: number = 0
 
-  initializeRead: boolean = false
 
   constructor(
     private pyhtonPdfService: PyhtonPdfService,
 
     private loadingCtrl: LoadingController,
     private toastController: ToastController,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private router: Router
   ) {
     TextToSpeech.openInstall()
   }
 
   ngOnInit(): void {
     this.loadText()
+  }
+
+  async handleLocalhost() {
+    localStorage.setItem('urlLocalhost', this.urlInput)
+    const toast = await this.toastController.create({
+      message: 'Url salva!',
+      duration: 1500,
+      position: 'bottom',
+    });
+
+    await toast.present();
   }
 
   async handleFile(event: any): Promise<void> {
@@ -78,10 +95,15 @@ export class Tab1Page implements OnInit {
     return `${value}%`;
   }
 
-  confirm() {
+  async confirm() {
     this.initializeRead = true
+    const loading = await this.loadingCtrl.create({
+      message: 'Preparando pdf...',
+    });
+    loading.present();
     setTimeout(() => {
       this.loadText()
+      loading.dismiss();
     }, 2000)
   }
 
@@ -107,12 +129,45 @@ export class Tab1Page implements OnInit {
 
     const readNow = strToRead
 
-    this.textToShow = this.text.replace(readNow, `<span style=\'background-color:var(--ion-color-primary);color:white;padding:3px;border-radius:5px\;font-weight:600'>${readNow}</span>`)
+    this.textToShow = this.text.replace(readNow, `<span id="textReadNow" style=\'background-color:var(--ion-color-primary);color:white;padding:3px;border-radius:5px\;font-weight:600'>${readNow}</span>`)
+
+    this.router.navigate([], { fragment: 'textReadNow' }).then(() => {
+      const element = document.getElementById('textReadNow');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
 
     this.textSpeak(strToRead)
       .then(() => {
+        this.readIndex += 3
+        this.getProgress()
         this.readArray(index + 3);
       })
+  }
+
+  getProgress() {
+    this.readProgress = this.readIndex
+  }
+
+  onIonChangeRead(ev: any) {
+    const indexToRead: number = ev.detail.value
+    console.log(indexToRead)
+
+    this.readArray(indexToRead)
+    this.readIndex = indexToRead
+  }
+
+  jumpReadTo(jump: number, isPlus?: boolean) {
+    if (isPlus) {
+      const newIndex = this.readIndex + jump
+      this.readIndex = newIndex
+      this.readArray(newIndex)
+    } else {
+      const newIndex = this.readIndex - jump
+      this.readIndex = newIndex
+      this.readArray(newIndex)
+    }
   }
 
   stop() {
@@ -120,14 +175,15 @@ export class Tab1Page implements OnInit {
   }
 
   async textSpeak(text: string) {
-    TextToSpeech.getSupportedVoices().then((test) => console.log(test.voices.filter((vc) => vc.lang === 'pt')))
+    TextToSpeech.getSupportedVoices().then((voices) => console.log(voices))
     await TextToSpeech.speak({
       text: text,
       rate: this.speed,
       pitch: 1.0,
-      lang: 'pt',
+      lang: 'pt-BR',
       volume: 1.0,
       category: 'ambient',
     })
   }
+
 }

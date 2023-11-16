@@ -13,10 +13,10 @@ export class PyhtonPdfService {
   ) { }
 
   getTextByPdf(): Observable<any> {
-    return this.http.get(`http://127.0.0.1:5000/read-pdf`);
+    return this.http.get(`${localStorage.getItem('urlLocalhost')}/read-pdf`);
   }
 
   sendPdf(body: any) {
-    return this.http.post(`http://127.0.0.1:5000/upload`, body)
+    return this.http.post(`${localStorage.getItem('urlLocalhost')}/upload`, body)
   }
 }

@@ -1,7 +1,22 @@
 <ion-content>
+  <div *ngIf="initializeRead"
+    class="w-11/12 py-2 fixed inset-x-0 top-0 mx-auto shadow-xl shadow-black bg-slate-800 rounded-b-xl">
+    <div class="w-full -mt-8">
+      <ion-range aria-label="Range with pin" [pin]="true" [pinFormatter]="pinFormatter"
+        (ionChange)="onIonChangeRead($event)" [value]="readProgress" [max]="textOnArray.length">
+        <ion-icon name="play-back" slot="start" color="primary" (click)="jumpReadTo(21, false)"></ion-icon>
+        <ion-icon name="play-forward" slot="end" color="primary" (click)="jumpReadTo(21, true)"></ion-icon>
+      </ion-range>
+    </div>
+  </div>
+
   <div class="content">
     <div *ngIf="!initializeRead" class="h-screen flex justify-center items-center">
       <div *ngIf="!inputFile" class="w-80">
+        <div class="w-full my-4">
+          <ion-input placeholder="Preencha com sua url local" [(ngModel)]="urlInput" fill="outline"></ion-input>
+          <ion-button (click)="handleLocalhost()" expand="full">Enviar url</ion-button>
+        </div>
         <label for="dropzone-file"
           class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
           <div class="flex flex-col items-center justify-center pt-5 pb-6">
@@ -42,7 +57,8 @@
     </div>
 
     <div *ngIf="initializeRead">
-      <div class="border-2 border-gray-500 rounded-lg p-5 my-4">
+
+      <div class="border-2 border-[color:#EC135A] bg-slate-900 rounded-lg p-5 mt-20 mb-32">
         <p [innerHTML]="sanitizeHtml(textToShow)"></p>
       </div>
 
@@ -50,7 +66,7 @@
         <div class="w-10/12 mx-auto flex justify-center items-center flex-col">
           <div class="w-full -mt-8">
             <ion-range aria-label="Range with pin" [pin]="true" [pinFormatter]="pinFormatter"
-              (ionChange)="onIonChange($event)" [min]="1" [max]="10">
+              (ionChange)="onIonChange($event)" [min]="1" [max]="5">
               <ion-icon name="speedometer" color="primary" slot="end"></ion-icon>
             </ion-range>
           </div>
