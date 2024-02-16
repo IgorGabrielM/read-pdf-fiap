@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { PyhtonPdfService } from '../services/pyhton-pdf.service';
 import { LoadingController, ToastController } from '@ionic/angular';
@@ -16,7 +16,7 @@ interface IInputFile {
   styleUrls: ['home.page.scss'],
   providers: [PyhtonPdfService]
 })
-export class Tab1Page implements OnInit {
+export class Tab1Page implements OnInit, AfterViewInit {
   inputFile: IInputFile;
   pdfModel: any
 
@@ -27,6 +27,7 @@ export class Tab1Page implements OnInit {
   textToShow: string = ''
   speed: number = 0.6
   textOnArray: string[] = []
+  textAlreadyRead: string[] = []
   readIndex: number = 0
   readProgress: number = 0
 
@@ -44,6 +45,12 @@ export class Tab1Page implements OnInit {
 
   ngOnInit(): void {
     this.loadText()
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.textOnArray = this.text.split(' ')
+    }, 2000)
   }
 
   async handleLocalhost() {
@@ -115,7 +122,6 @@ export class Tab1Page implements OnInit {
   }
 
   sanitizeHtml(html: string): SafeHtml {
-    this.textOnArray = this.text.split(' ')
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
@@ -124,12 +130,21 @@ export class Tab1Page implements OnInit {
       return;
     }
 
-    const arrayStr = [this.textOnArray[index], this.textOnArray[index + 1], this.textOnArray[index + 2]];
+    const arrayStr = [this.textOnArray[0], this.textOnArray[1], this.textOnArray[2]];
     const strToRead = arrayStr.join(' ');
 
-    const readNow = strToRead
 
-    this.textToShow = this.text.replace(readNow, `<span id="textReadNow" style=\'background-color:var(--ion-color-primary);color:white;padding:3px;border-radius:5px\;font-weight:600'>${readNow}</span>`)
+    let indicesToDelete = [0, 1, 2];
+
+    for (let i = indicesToDelete.length - 1; i >= 0; i--) {
+      this.textOnArray.splice(indicesToDelete[i], 1);
+    }
+
+    this.textAlreadyRead = this.textAlreadyRead.concat(arrayStr)
+
+    const readNow = strToRead
+    this.textToShow = this.textAlreadyRead.join(' ') + " " + this.text.replace(readNow, `<span id="textReadNow" style=\'background-color:var(--ion-color-primary);color:white;padding:3px;border-radius:5px\;font-weight:600'>${readNow}</span>`)
+    this.text = this.text.replace(strToRead, '')
 
     this.router.navigate([], { fragment: 'textReadNow' }).then(() => {
       const element = document.getElementById('textReadNow');
@@ -152,7 +167,6 @@ export class Tab1Page implements OnInit {
 
   onIonChangeRead(ev: any) {
     const indexToRead: number = ev.detail.value
-    console.log(indexToRead)
 
     this.readArray(indexToRead)
     this.readIndex = indexToRead
@@ -175,7 +189,7 @@ export class Tab1Page implements OnInit {
   }
 
   async textSpeak(text: string) {
-    TextToSpeech.getSupportedVoices().then((voices) => console.log(voices))
+
     await TextToSpeech.speak({
       text: text,
       rate: this.speed,
